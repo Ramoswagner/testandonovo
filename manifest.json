@@ -1,0 +1,18 @@
+{
+  "name": "DICE Model · Analisador BCG",
+  "short_name": "DICE Model",
+  "description": "Analisador do framework DICE do BCG para gestão de mudança organizacional.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B1E33",
+  "theme_color": "#0B1E33",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<!-- FIX #07 — viewport-fit:cover para iPhones com notch/Dynamic Island -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>DICE Model · Analisador BCG · Wagner Ramos</title>
+
+<!-- FIX #09 — meta description e Open Graph para preview no LinkedIn -->
+<meta name="description" content="Analisador do modelo DICE do BCG — avalie a probabilidade de sucesso de projetos de mudança com base em 225 iniciativas reais. Relatório PDF em 3 páginas.">
+<meta property="og:title" content="DICE Model · Analisador BCG">
+<meta property="og:description" content="Framework BCG/HBR para gestão de mudança organizacional. Calcule o score DICE, identifique zonas de risco e gere relatório executivo em PDF.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ramoswagner.github.io/dice-model/">
+<meta property="og:image" content="https://ramoswagner.github.io/dice-model/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DICE Model · Analisador BCG">
+<meta name="twitter:description" content="Framework BCG/HBR para gestão de mudança — score, zonas de risco e relatório PDF executivo.">
+
+<!-- FIX #10 — favicon SVG + theme-color para barra do browser -->
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0B1E33">
+
+<!-- FIX #16 — PWA manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DICE Model">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ── Cursor Wagner ── -->
+<div class="co" id="co" aria-hidden="true"></div>
+<div class="ci" id="ci" aria-hidden="true"></div>
+<div class="cdot" id="cdot" aria-hidden="true"></div>
+
+<!-- ── Header ── -->
+<header class="header">
+  <div class="header-brand">
+    <div class="header-logo" aria-hidden="true">
+      <span class="header-logo-fallback">WR</span>
+    </div>
+    <div>
+      <span class="header-title">DICE Model</span>
+      <span class="header-sub">Wagner Ramos · PMO &amp; BI</span>
+    </div>
+  </div>
+  <!-- FIX #17 — role="tablist" e role="tab" para ARIA compliant -->
+  <nav class="header-nav" aria-label="Navegação principal" role="tablist">
+    <button class="tab-btn active" id="tab-analyzer" role="tab"
+            onclick="switchTab('analyzer',event)"
+            aria-controls="view-analyzer" aria-selected="true">Analisador</button>
+    <button class="tab-btn" id="tab-guide" role="tab"
+            onclick="switchTab('guide',event)"
+            aria-controls="view-guide" aria-selected="false">Guia de Uso</button>
+  </nav>
+</header>
+
+<div class="app">
+
+  <!-- ══════════════ VIEW: ANALISADOR ══════════════ -->
+  <!-- FIX #18 — aria-labelledby liga o panel ao tab correspondente -->
+  <div class="view active" id="view-analyzer" role="tabpanel" aria-labelledby="tab-analyzer">
+    <div class="analyzer-grid">
+
+      <!-- Card de inputs -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Fatores de Avaliação</div>
+          <div class="card-heading">Preencha o DICE</div>
+        </div>
+        <div class="card-body">
+
+          <!-- Nome do projeto -->
+          <div class="project-name-row">
+            <label class="project-name-label" for="projectName">Nome do Projeto</label>
+            <input class="project-name-input" id="projectName" type="text"
+                   placeholder="Ex: Implantação ERP — Módulo Financeiro" maxlength="80">
+          </div>
+
+          <div class="factor-list">
+
+            <!-- ── D ── -->
+            <div class="factor-row">
+              <div class="factor-label">
+                <span class="factor-tag" aria-hidden="true">D</span>
+                <span>Duração entre marcos</span>
+                <span class="factor-desc">intervalo / prazo</span>
+              </div>
+              <div class="factor-options" data-factor="D" role="radiogroup" aria-label="Duração entre marcos de revisão">
+                <button class="opt-btn selected" data-val="1" onclick="selectFactor(this)" role="radio" aria-checked="true">
+                  <span class="opt-num">1</span><span class="opt-label">&lt; 2 meses</span>
+                  <div class="tip" role="tooltip"><strong>Ótimo (1pt)</strong> — Revisões em menos de 2 meses. Permite detecção precoce de riscos.</div>
+                </button>
+                <button class="opt-btn" data-val="2" onclick="selectFactor(this)" role="radio" aria-checked="false">
+                  <span class="opt-num">2</span><span class="opt-label">2–4 meses</span>
+                  <div class="tip" role="tooltip"><strong>Razoável (2pts)</strong> — Intervalo adequado para projetos de complexidade moderada.</div>
+                </button>
+                <button class="opt-btn" data-val="3" onclick="selectFactor(this)" role="radio" aria-checked="false">
+                  <span class="opt-num">3</span><span class="opt-label">4–8 meses</span>
+                  <div class="tip" role="tooltip"><strong>Risco elevado (3pts)</strong> — Problemas podem acumular sem percepção da liderança. Subdivida os marcos.</div>
+                </button>
+                <button class="opt-btn" data-val="4" onclick="selectFactor(this)" role="radio" aria-checked="false">
+                  <span class="opt-num">4</span><span class="opt-label">&gt; 8 meses</span>
+                  <div class="tip" role="tooltip"><strong>Crítico (4pts)</strong> — O BCG identificou que o risco aumenta exponencialmente neste intervalo.</div>
+                </button>
+              </div>
+              
+              <div class="factor-tip-panel" aria-live="polite"></div><div class="factor-justification" id="just-D">
+                <textarea class="factor-just-input" id="justD" rows="2"
+                          placeholder="Justificativa: ex. revisões quinzenais definidas no plano de projeto…"
+                          aria-label="Justificativa para fator D"></textarea>
+              </div>
+            </div>
+
+            <!-- ── I ── -->
+            <div class="factor-row">
+              <div class="factor-label">
+                <span class="factor-tag" aria-hidden="true">I</span>
+                <span>Integridade da equipe</span>
+                <span class="factor-desc">× 2 no cálculo</span>
+              </div>
+              <div class="factor-options" data-factor="I" role="radiogroup" aria-label="Integridade da equipe do projeto">
+                <button class="opt-btn selected" data-val="1" onclick="selectFactor(this)" role="radio" aria-checked="true">
+                  <span class="opt-num">1</span><span class="opt-label">Muito boa</span>
+                  <div class="tip" role="tooltip"><strong>Excelente (1pt)</strong> — Líder altamente capaz, respeitado pelos pares. Membros com dedicação ≥ 50% ao projeto.</div>
+                </button>
+                <button class="opt-btn" data-val="2" onclick="selectFactor(this)" role="radio" aria-checked="false">
+                  <span class="opt-num">2</span><span class="opt-label">Boa</span>
+                  <div class="tip" role="tooltip"><strong>Boa (2pts)</strong> — Equipe competente mas com algumas lacunas. Verifique se a dedicação está sendo comprometida.</div>
+                </button>
+                <button class="opt-btn" data-val="3" onclick="selectFactor(this)" role="radio" aria-checked="false">
+                  <span class="opt-num">3</span><span class="opt-label">Média</span>
+                  <div class="tip" role="tooltip"><strong>Fraca (3pts)</strong> — Lacunas relevantes de habilidade ou dedicação. Reforce a equipe antes do lançamento.</div>
+                </button>
+                <button class="opt-btn" data-val="4" onclick="selectFactor(this)" role="radio" aria-checked="false">
+                  <span class="opt-num">4</span><span class="opt-label">Fraca</span>
+                  <div class="tip" role="tooltip"><strong>Crítico (4pts)</strong> — Equipe inadequada em múltiplas dimensões. O BCG aponta que a qualidade da equipe é o principal preditor de sucesso.</div>
+                </button>
+              </div>
+              
+              <div class="factor-tip-panel" aria-live="polite"></div><div class="factor-justification" id="just-I">
+                <textarea class="factor-just-input" id="justI" rows="2"
+                          placeholder="Justificativa: ex. líder sênior com 10 anos de experiência em projetos similares…"
+                          aria-label="Justificativa para fator I"></textarea>
+              </div>
+            </div>
+
+            <!-- ── C1 ── -->
+            <div class="factor-row">
+              <div class="factor-label">
+                <span class="factor-tag" aria-hidden="true">C1</span>
+                <span>Compromisso da alta gestão</span>
+                <span class="factor-desc">× 2 no cálculo</span>
+              </div>
+              <div class="factor-options" data-factor="C1" role="radiogroup" aria-label="Compromisso da alta gestão">
+                <button class="opt-btn selected" data-val="1" onclick="selectFactor(this)" role="radio" aria-checked="true">
+                  <span class="opt-num">1</span><span class="opt-label">Muito forte</span>
+                  <div class="tip" role="tooltip"><strong>Excelente (1pt)</strong> — Liderança comunica ativamente. Quando você achar que está falando 3× mais do que precisa, está no nível certo.</div>
+                </button>
+                <button class="opt-btn" data-val="2" onclick="selectFactor(this)" role="radio" aria-checked="false">
+                  <span class="opt-num">2</span><span class="opt-label">Favorável</span>
+                  <div class="tip" role="tooltip"><strong>Favorável (2pts)</strong> — Suporte presente e visível, mas poderia ser mais frequente ou explícito.</div>
+                </button>
+                <button class="opt-btn" data-val="3" onclick="selectFactor(this)" role="radio" aria-checked="false">
+                  <span class="opt-num">3</span><span class="opt-label">Neutro</span>
+                  <div class="tip" role="tooltip"><strong>Neutro (3pts)</strong> — Postura ambígua envia sinal errado para a organização.</div>
+                </button>
+                <button class="opt-btn" data-val="4" onclick="selectFactor(this)" role="radio" aria-checked="false">
+                  <span class="opt-num">4</span><span class="opt-label">Relutante</span>
+                  <div class="tip" role="tooltip"><strong>Crítico (4pts)</strong> — Resistência ou ausência visível do topo. O BCG considera este o fator mais determinante do fracasso.</div>
+                </button>
+              </div>
+              
+              <div class="factor-tip-panel" aria-live="polite"></div><div class="factor-justification" id="just-C1">
+                <textarea class="factor-just-input" id="justC1" rows="2"
+                          placeholder="Justificativa: ex. diretoria realiza roadshows mensais sobre o projeto…"
+                          aria-label="Justificativa para fator C1"></textarea>
+              </div>
+            </div>
+
+            <!-- ── C2 ── -->
+            <div class="factor-row">
+              <div class="factor-label">
+                <span class="factor-tag" aria-hidden="true">C2</span>
+                <span>Compromisso dos impactados</span>
+              </div>
+              <div class="factor-options" data-factor="C2" role="radiogroup" aria-label="Compromisso dos colaboradores impactados">
+                <button class="opt-btn selected" data-val="1" onclick="selectFactor(this)" role="radio" aria-checked="true">
+                  <span class="opt-num">1</span><span class="opt-label">Ansiosos</span>
+                  <div class="tip" role="tooltip"><strong>Engajados (1pt)</strong> — Colaboradores entusiasmados e apoiam ativamente a iniciativa.</div>
+                </button>
+                <button class="opt-btn" data-val="2" onclick="selectFactor(this)" role="radio" aria-checked="false">
+                  <span class="opt-num">2</span><span class="opt-label">Dispostos</span>
+                  <div class="tip" role="tooltip"><strong>Dispostos (2pts)</strong> — Aceitam a mudança, embora sem entusiasmo. Comunicação consistente é fundamental.</div>
+                </button>
+                <button class="opt-btn" data-val="3" onclick="selectFactor(this)" role="radio" aria-checked="false">
+                  <span class="opt-num">3</span><span class="opt-label">Relutantes</span>
+                  <div class="tip" role="tooltip"><strong>Relutantes (3pts)</strong> — Resistência presente. O BCG recomenda conversas 1:1 para mapear preocupações.</div>
+                </button>
+                <button class="opt-btn" data-val="4" onclick="selectFactor(this)" role="radio" aria-checked="false">
+                  <span class="opt-num">4</span><span class="opt-label">Fort. relut.</span>
+                  <div class="tip" role="tooltip"><strong>Alta resistência (4pts)</strong> — Oposição ativa. Requer plano de gestão da mudança estruturado.</div>
+                </button>
+              </div>
+              
+              <div class="factor-tip-panel" aria-live="polite"></div><div class="factor-justification" id="just-C2">
+                <textarea class="factor-just-input" id="justC2" rows="2"
+                          placeholder="Justificativa: ex. pesquisa de clima indicou 40% de resistência na área afetada…"
+                          aria-label="Justificativa para fator C2"></textarea>
+              </div>
+            </div>
+
+            <!-- ── E ── -->
+            <div class="factor-row">
+              <div class="factor-label">
+                <span class="factor-tag" aria-hidden="true">E</span>
+                <span>Esforço adicional exigido</span>
+              </div>
+              <div class="factor-options" data-factor="E" role="radiogroup" aria-label="Esforço adicional exigido da equipe">
+                <button class="opt-btn selected" data-val="1" onclick="selectFactor(this)" role="radio" aria-checked="true">
+                  <span class="opt-num">1</span><span class="opt-label">&lt; 10%</span>
+                  <div class="tip" role="tooltip"><strong>Seguro (1pt)</strong> — Menos de 10% de esforço adicional. O BCG recomenda não ultrapassar este limite.</div>
+                </button>
+                <button class="opt-btn" data-val="2" onclick="selectFactor(this)" role="radio" aria-checked="false">
+                  <span class="opt-num">2</span><span class="opt-label">10–20%</span>
+                  <div class="tip" role="tooltip"><strong>Gerenciável (2pts)</strong> — Entre 10–20% de esforço extra. Monitore sinais de sobrecarga.</div>
+                </button>
+                <button class="opt-btn" data-val="3" onclick="selectFactor(this)" role="radio" aria-checked="false">
+                  <span class="opt-num">3</span><span class="opt-label">20–40%</span>
+                  <div class="tip" role="tooltip"><strong>Alto (3pts)</strong> — Entre 20–40% de esforço adicional. Remova responsabilidades discricionárias.</div>
+                </button>
+                <button class="opt-btn" data-val="4" onclick="selectFactor(this)" role="radio" aria-checked="false">
+                  <span class="opt-num">4</span><span class="opt-label">&gt; 40%</span>
+                  <div class="tip" role="tooltip"><strong>Insustentável (4pts)</strong> — Mais de 40% de carga adicional. Alto risco de burnout e abandono do projeto.</div>
+                </button>
+              </div>
+              
+              <div class="factor-tip-panel" aria-live="polite"></div><div class="factor-justification" id="just-E">
+                <textarea class="factor-just-input" id="justE" rows="2"
+                          placeholder="Justificativa: ex. equipe com ~15% de horas extras previstas durante implantação…"
+                          aria-label="Justificativa para fator E"></textarea>
+              </div>
+            </div>
+
+          </div><!-- /factor-list -->
+
+          <!-- Bloco de resultado -->
+          <div class="result-block win" id="resultBlock" aria-live="polite" aria-atomic="true">
+            <div class="result-label">Pontuação DICE</div>
+            <div class="result-row" style="display:flex;align-items:center;gap:16px">
+              <div class="result-score" id="scoreNum">7</div>
+              <div class="result-zone-pill" id="zonePill">● WIN</div>
+            </div>
+            <div class="result-msg" id="resultMsg">Alta probabilidade de sucesso. Mantenha a gestão do projeto como está.</div>
+            <div class="formula-row" id="formulaRow" aria-label="Decomposição da fórmula DICE">
+              <span class="formula-chip" id="fD">D=1</span>
+              <span style="opacity:.4" aria-hidden="true">+</span>
+              <span class="formula-chip" id="fI">2×I=2</span>
+              <span style="opacity:.4" aria-hidden="true">+</span>
+              <span class="formula-chip" id="fC1">2×C1=2</span>
+              <span style="opacity:.4" aria-hidden="true">+</span>
+              <span class="formula-chip" id="fC2">C2=1</span>
+              <span style="opacity:.4" aria-hidden="true">+</span>
+              <span class="formula-chip" id="fE">E=1</span>
+              <span style="opacity:.4" aria-hidden="true">=</span>
+              <span class="formula-chip" id="fTotal" style="font-weight:700;color:var(--gold-lt)">7</span>
+            </div>
+          </div>
+
+          <!-- Botões de ação -->
+          <div class="action-row">
+            <button class="btn-main btn-report" onclick="openReport()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              Relatório
+            </button>
+            <button class="btn-main" onclick="savePNG()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              PNG
+            </button>
+            <button class="btn-ghost" onclick="resetAll()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <polyline points="1 4 1 10 7 10"/>
+                <path d="M3.51 15a9 9 0 1 0 .49-3.96"/>
+              </svg>
+              Reset
+            </button>
+          </div>
+
+        </div><!-- /card-body -->
+      </div><!-- /card -->
+
+      <!-- Painel do gráfico -->
+      <div class="chart-panel">
+        <div class="card chart-card">
+          <div class="chart-toggle-row">
+            <div style="flex:1">
+              <div class="card-title" style="margin-bottom:4px">Visualização</div>
+              <div class="card-heading">Gráfico DICE</div>
+            </div>
+            <span class="toggle-label" id="toggleLabel">Fundo transparente</span>
+            <label class="toggle-switch" aria-label="Alternar fundo transparente">
+              <input type="checkbox" id="transparentToggle" onchange="update()" aria-labelledby="toggleLabel">
+              <div class="toggle-track"></div>
+            </label>
+          </div>
+          <!-- FIX #12 — width/height removidos; aspect-ratio CSS é a única fonte de verdade -->
+          <canvas id="diceChart"
+                  role="img" aria-label="Gráfico DICE: pontuação 7, zona WIN"></canvas>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <div class="card-title" style="margin-bottom:16px">Decomposição dos Fatores</div>
+            <div class="breakdown-grid" aria-label="Contribuição de cada fator">
+              <div class="breakdown-item">
+                <div class="bd-key">D</div>
+                <div class="bd-val" id="bdD">1</div>
+                <div class="bd-bar-wrap"><div class="bd-bar-fill" id="barD" style="width:25%"></div></div>
+                <div class="bd-label">Duração</div>
+              </div>
+              <div class="breakdown-item">
+                <div class="bd-key">2×I</div>
+                <div class="bd-val" id="bdI">2</div>
+                <div class="bd-bar-wrap"><div class="bd-bar-fill" id="barI" style="width:25%"></div></div>
+                <div class="bd-label">Integridade</div>
+              </div>
+              <div class="breakdown-item">
+                <div class="bd-key">2×C1</div>
+                <div class="bd-val" id="bdC1">2</div>
+                <div class="bd-bar-wrap"><div class="bd-bar-fill" id="barC1" style="width:25%"></div></div>
+                <div class="bd-label">Alta Gestão</div>
+              </div>
+              <div class="breakdown-item">
+                <div class="bd-key">C2</div>
+                <div class="bd-val" id="bdC2">1</div>
+                <div class="bd-bar-wrap"><div class="bd-bar-fill" id="barC2" style="width:25%"></div></div>
+                <div class="bd-label">Impactados</div>
+              </div>
+              <div class="breakdown-item">
+                <div class="bd-key">E</div>
+                <div class="bd-val" id="bdE">1</div>
+                <div class="bd-bar-wrap"><div class="bd-bar-fill" id="barE" style="width:25%"></div></div>
+                <div class="bd-label">Esforço</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /chart-panel -->
+
+    </div><!-- /analyzer-grid -->
+  </div><!-- /view-analyzer -->
+
+
+  <!-- ══════════════ VIEW: GUIA ══════════════ -->
+  <div class="view" id="view-guide" role="tabpanel" aria-labelledby="tab-guide">
+
+    <!-- ── 1. Origem e contexto ── -->
+    <div class="guide-hero">
+      <div class="guide-hero-tag">Origem · Boston Consulting Group · 1992–2005</div>
+      <div class="guide-hero-title">A Dimensão Difícil da Gestão de Mudanças</div>
+      <div class="guide-hero-text">
+        Em 1992, o <strong>Boston Consulting Group</strong> iniciou uma pesquisa multianual com uma hipótese contrariana: organizações bem diferentes entre si lidam com transformações de formas surpreendentemente similares — e os fatores que decidem o resultado são mensuráveis, comunicáveis e modificáveis em semanas.<br><br>
+        O estudo analisou <strong>225 iniciativas de mudança</strong> em setores como telecomunicações, bens de consumo e serviços financeiros, em múltiplos países. A conclusão foi inequívoca: <strong>dois em cada três programas de transformação falham</strong> — e quatro fatores "duros" predizem o resultado com consistência estatística superior a qualquer combinação de fatores alternativos testada, incluindo cultura organizacional, liderança visionária e motivação.<br><br>
+        O modelo foi publicado por <strong>Harold L. Sirkin, Perry Keenan e Alan Jackson</strong> na <em>Harvard Business Review</em> em outubro de 2005. À época da publicação, o BCG já havia aplicado o DICE em mais de <strong>1.000 programas globais</strong>. Em 2014, a fórmula foi patenteada nos Estados Unidos (US Patent 8.818.756).
+      </div>
+    </div>
+
+    <!-- ── 2. Por que fatores duros? ── -->
+    <div class="guide-hero" style="margin-top:0">
+      <div class="guide-hero-tag">Fundamentação</div>
+      <div class="guide-hero-title">Por que fatores "duros" superam os fatores "soft"?</div>
+      <div class="guide-hero-text">
+        Nas décadas anteriores ao DICE, a literatura de gestão de mudanças concentrava esforços em aspectos "soft": cultura organizacional, liderança visionária, motivação e comunicação emocional. O BCG não refutou a importância desses fatores — mas demonstrou que eles apresentam três limitações críticas que os tornam insuficientes como preditores:<br><br>
+        <strong>1. Difíceis de medir com precisão.</strong> Atitudes e relacionamentos só podem ser inferidos via pesquisas qualitativas, sujeitas à desejabilidade social e alta margem de erro.<br>
+        <strong>2. Lentos para mudar.</strong> Cultura organizacional pode levar anos para se transformar — um prazo incompatível com a urgência da maioria dos programas de mudança.<br>
+        <strong>3. Impacto indireto e situacional.</strong> Uma liderança visionária é vital em certos contextos, mas não em todos os tipos e escalas de projeto.<br><br>
+        Os fatores DICE, ao contrário, são <strong>quantificáveis, comunicáveis sem ambiguidade e acionáveis rapidamente</strong>. Um projeto pode migrar da zona WOE para a zona WIN em poucas semanas — se as alavancas corretas forem acionadas na sequência certa.
+      </div>
+    </div>
+
+    <!-- ── 3. Os quatro fatores ── -->
+    <div class="guide-hero" style="margin-top:0;padding-bottom:0;border:none;background:none;backdrop-filter:none">
+      <div class="guide-hero-tag">Os Quatro Fatores</div>
+      <div class="guide-hero-title">O que cada dimensão avalia</div>
+    </div>
+
+    <div class="guide-factors-grid">
+
+      <div class="guide-factor-card">
+        <div class="guide-factor-header">
+          <div class="guide-factor-badge">D</div>
+          <div>
+            <div class="guide-factor-title">Duration — Duração</div>
+            <div class="guide-factor-subtitle">Intervalo entre revisões formais de marco</div>
+          </div>
+        </div>
+        <div class="guide-factor-body">
+          O BCG descobriu algo contraintuitivo: <strong>um projeto longo revisado com frequência tem mais chances de sucesso do que um projeto curto revisado raramente.</strong> O problema não é a duração total — é o intervalo entre os checkpoints.<br><br>
+          A probabilidade de fracasso aumenta <strong>exponencialmente</strong> quando o intervalo entre revisões ultrapassa <em>8 semanas</em>. Em projetos complexos, revisões a cada 2 semanas são ideais; em projetos mais simples, a cada 6–8 semanas.<br><br>
+          Um caso documentado: um programa de 3 anos com checkpoints mensais superou consistentemente um programa de 8 meses sem revisões intermediárias.
+        </div>
+        <div class="guide-lever">
+          <span class="guide-lever-icon">⚡</span>
+          <div class="guide-lever-text"><strong>Alavanca rápida:</strong> subdivida marcos existentes criando checkpoints intermediários — sem alterar o escopo ou o cronograma geral.</div>
+        </div>
+      </div>
+
+      <div class="guide-factor-card">
+        <div class="guide-factor-header">
+          <div class="guide-factor-badge">I</div>
+          <div>
+            <div class="guide-factor-title">Integrity — Integridade</div>
+            <div class="guide-factor-subtitle">Capacidade de entrega da equipe · peso ×2</div>
+          </div>
+        </div>
+        <div class="guide-factor-body">
+          Avalia se a equipe tem as habilidades, motivação e dedicação necessárias para executar. <strong>Um bom gestor operacional não é necessariamente um bom líder de mudança.</strong><br><br>
+          O BCG identificou que líderes de projeto eficazes combinam: habilidade de resolução de problemas, orientação a resultados, tolerância à ambiguidade, habilidade política e disposição para assumir responsabilidade — evitando ao mesmo tempo o holofote pessoal.<br><br>
+          <strong>Dedicação é tão importante quanto competência.</strong> Membros-chave com menos de 50% do tempo dedicado ao projeto comprometem o fator I independentemente de suas habilidades.
+        </div>
+        <div class="guide-lever">
+          <span class="guide-lever-icon">⚡</span>
+          <div class="guide-lever-text"><strong>Alavanca rápida:</strong> formalize accountability individual por entrega e garanta dedicação mínima de 50% para os membros-chave.</div>
+        </div>
+      </div>
+
+      <div class="guide-factor-card">
+        <div class="guide-factor-header">
+          <div class="guide-factor-badge">C1</div>
+          <div>
+            <div class="guide-factor-title">Commitment (Sênior) — Alta Gestão</div>
+            <div class="guide-factor-subtitle">Suporte visível das lideranças influentes · peso ×2</div>
+          </div>
+        </div>
+        <div class="guide-factor-body">
+          Não basta o suporte existir — ele precisa ser <strong>inequivocamente visível.</strong> Em um caso documentado pelo BCG, um CEO acreditava que estava comunicando em excesso. Quando os gerentes de linha foram consultados, disseram que ele fazia muito pouco.<br><br>
+          <strong>Regra prática do BCG:</strong> quando a liderança sentir que está falando sobre a mudança pelo menos 3× mais do que o necessário, os gestores de linha sentirão que o suporte está na medida certa.<br><br>
+          C1 tem peso dobrado na fórmula — é, junto com I, o preditor mais forte do resultado. Resistência ou ambiguidade da alta gestão raramente é recuperável sem intervenção direta.
+        </div>
+        <div class="guide-lever">
+          <span class="guide-lever-icon">⚡</span>
+          <div class="guide-lever-text"><strong>Alavanca rápida:</strong> roadshows executivos, presença em marcos críticos e mensagens diretas aos gestores de linha — ações simbólicas que tornem o suporte inequívoco.</div>
+        </div>
+      </div>
+
+      <div class="guide-factor-card">
+        <div class="guide-factor-header">
+          <div class="guide-factor-badge">C2</div>
+          <div>
+            <div class="guide-factor-title">Commitment (Local) — Impactados</div>
+            <div class="guide-factor-subtitle">Engajamento de quem vai viver a mudança</div>
+          </div>
+        </div>
+        <div class="guide-factor-body">
+          As organizações frequentemente <strong>subestimam tanto a resistência quanto sua capacidade de revertê-la.</strong> Um esforço simples de engajamento — conversas 1:1 honestas sobre objetivos e impactos — pode transformar resistentes em defensores ativos.<br><br>
+          Um caso real citado no artigo original: um gerente disse "demissões não ocorrerão", outro disse "não são esperadas" — a inconsistência de uma única palavra foi suficiente para gerar desconfiança generalizada que comprometeu o programa.<br><br>
+          Mensagens alinhadas e líderes informais de opinião engajados são os dois vetores mais eficazes para elevar C2.
+        </div>
+        <div class="guide-lever">
+          <span class="guide-lever-icon">⚡</span>
+          <div class="guide-lever-text"><strong>Alavanca rápida:</strong> mapeie líderes informais nas áreas mais impactadas e envolva-os na construção da solução — não apenas na implementação.</div>
+        </div>
+      </div>
+
+      <div class="guide-factor-card full">
+        <div class="guide-factor-header">
+          <div class="guide-factor-badge">E</div>
+          <div>
+            <div class="guide-factor-title">Effort — Esforço Adicional</div>
+            <div class="guide-factor-subtitle">Carga extra imposta além do trabalho cotidiano</div>
+          </div>
+        </div>
+        <div class="guide-factor-body">
+          Em muitas organizações, as pessoas já operam próximo ao limite de capacidade. Adicionar uma iniciativa de mudança sem remover responsabilidades existentes é uma receita para resistência passiva, queda de qualidade e abandono silencioso.<br><br>
+          O BCG recomenda que o esforço adicional <strong>não ultrapasse 10%</strong> da carga normal de trabalho. Acima disso, os recursos ficam sobrecarregados e comprometem tanto o projeto quanto as operações normais — criando um ciclo de deterioração difícil de reverter.<br><br>
+          <strong>Caso documentado:</strong> um comitê diretor avaliou 250 subprojetos simultâneos e decidiu adiar ou reestruturar 120 deles para liberar capacidade nos prioritários. O resultado foi uma aceleração significativa nos projetos restantes — com menos resistência e maior qualidade de entrega.
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px">
+          <div style="background:rgba(3,166,60,0.08);border:1px solid rgba(3,166,60,0.2);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-family:var(--serif);font-size:22px;font-weight:700;color:var(--bright)">1</div>
+            <div style="font-size:11px;font-weight:700;color:var(--bright);margin:4px 0 2px">&lt; 10%</div>
+            <div style="font-size:11px;color:var(--muted)">Seguro · mantém qualidade e engajamento</div>
+          </div>
+          <div style="background:rgba(15,128,80,0.07);border:1px solid rgba(15,128,80,0.2);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-family:var(--serif);font-size:22px;font-weight:700;color:#0F8050">2</div>
+            <div style="font-size:11px;font-weight:700;color:#0F8050;margin:4px 0 2px">10–20%</div>
+            <div style="font-size:11px;color:var(--muted)">Gerenciável · monitore sinais de sobrecarga</div>
+          </div>
+          <div style="background:rgba(242,183,5,0.08);border:1px solid rgba(242,183,5,0.2);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-family:var(--serif);font-size:22px;font-weight:700;color:var(--warning)">3</div>
+            <div style="font-size:11px;font-weight:700;color:var(--warning);margin:4px 0 2px">20–40%</div>
+            <div style="font-size:11px;color:var(--muted)">Alto · remova tarefas discricionárias</div>
+          </div>
+          <div style="background:rgba(242,92,92,0.08);border:1px solid rgba(242,92,92,0.2);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-family:var(--serif);font-size:22px;font-weight:700;color:var(--danger)">4</div>
+            <div style="font-size:11px;font-weight:700;color:var(--danger);margin:4px 0 2px">&gt; 40%</div>
+            <div style="font-size:11px;color:var(--muted)">Insustentável · risco de burnout e abandono</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── 4. Fórmula ── -->
+    <div class="guide-hero" style="margin-top:0">
+      <div class="guide-hero-tag">Cálculo</div>
+      <div class="guide-hero-title">A Fórmula DICE</div>
+      <div class="guide-hero-text">
+        A regressão logística multivariada sobre os 225 casos revelou que <strong>Integridade (I)</strong> e <strong>Compromisso da alta gestão (C1)</strong> têm impacto estatisticamente dobrado sobre o resultado final. A fórmula resultante é:
+      </div>
+    </div>
+
+    <div class="guide-formula-box">
+      <div class="guide-formula-expr">DICE = D + (2 × I) + (2 × C1) + C2 + E</div>
+      <div class="guide-formula-note">
+        Score mínimo: <strong style="color:var(--ink)">7</strong> (todos os fatores = 1, máximo favorável) &nbsp;·&nbsp;
+        Score máximo: <strong style="color:var(--ink)">28</strong> (todos os fatores = 4, máximo desfavorável)<br>
+        Quanto <em style="color:var(--gold-lt);font-style:normal">menor</em> o score, maior a probabilidade de sucesso.
+        I e C1 com peso dobrado validado por regressão logística multivariada (R² = 0,84) · Sirkin et al. (2005)
+      </div>
+    </div>
+
+    <!-- ── 5. As três zonas ── -->
+    <div class="guide-hero" style="margin-top:0;padding-bottom:16px">
+      <div class="guide-hero-tag">Zonas de Resultado</div>
+      <div class="guide-hero-title">Interpretação do Score</div>
+      <div class="guide-hero-text">
+        O BCG mapeou os scores dos 225 projetos estudados contra seus resultados reais e identificou três zonas de probabilidade. A tabela abaixo apresenta a interpretação completa de cada faixa, com as taxas de sucesso observadas na base de dados original.
+      </div>
+      <table class="guide-score-table">
+        <!-- FIX #19 — caption para leitores de tela -->
+        <caption class="sr-only">Interpretação das zonas de score DICE e condutas recomendadas</caption>
+        <thead>
+          <tr>
+            <th>Score</th>
+            <th>Zona</th>
+            <th>Probabilidade de sucesso</th>
+            <th>Interpretação e conduta recomendada</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="score-good">7–10</td>
+            <td><span style="color:var(--bright);font-weight:700">WIN forte</span></td>
+            <td class="score-good">&gt; 85%</td>
+            <td>Projeto estruturalmente sólido. Mantenha a cadência de revisões e documente as práticas para replicação no portfólio.</td>
+          </tr>
+          <tr>
+            <td class="score-good">11–14</td>
+            <td><span style="color:var(--bright);font-weight:700">WIN moderado</span></td>
+            <td class="score-good">70–85%</td>
+            <td>Boa probabilidade de sucesso, mas monitoramento ativo é necessário. Identifique o fator mais elevado e atue preventivamente.</td>
+          </tr>
+          <tr>
+            <td class="score-warn">15–17</td>
+            <td><span style="color:var(--warning);font-weight:700">WORRY</span></td>
+            <td class="score-warn">50–70%</td>
+            <td>Resultado imprevisível. O risco cresce à medida que o score se aproxima de 17. Intervenção imediata nos dois fatores mais elevados é mandatória.</td>
+          </tr>
+          <tr>
+            <td class="score-bad">18–19</td>
+            <td><span style="color:var(--danger);font-weight:700">WOE limiar</span></td>
+            <td class="score-bad">30–50%</td>
+            <td>Zona crítica inicial. Reestruturação de pelo menos dois fatores antes de prosseguir. Considere pausar entregas não-essenciais.</td>
+          </tr>
+          <tr>
+            <td class="score-bad">20–28</td>
+            <td><span style="color:var(--danger);font-weight:700">WOE profundo</span></td>
+            <td class="score-bad">&lt; 30%</td>
+            <td>Alta probabilidade de fracasso ou resultado medíocre. O BCG recomenda revisão das premissas fundamentais antes de qualquer investimento adicional.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── 6. Zonas visuais ── -->
+    <div class="guide-zones-grid">
+      <div class="guide-zone-card win">
+        <div class="guide-zone-label">WIN · Zona de Sucesso</div>
+        <span class="zone-range">7 – 14</span>
+        <div style="color:var(--muted);font-size:13px;line-height:1.7">
+          Alta probabilidade estatística de sucesso. A estrutura de governança, a qualidade da equipe e o nível de comprometimento organizacional estão bem posicionados. Mantenha o monitoramento e documente as boas práticas para replicação.
+        </div>
+      </div>
+      <div class="guide-zone-card worry">
+        <div class="guide-zone-label">WORRY · Zona de Atenção</div>
+        <span class="zone-range">15 – 17</span>
+        <div style="color:var(--muted);font-size:13px;line-height:1.7">
+          Resultado imprevisível. Existe risco real de desvio dos objetivos caso intervenções não sejam realizadas. Identifique os dois fatores com pontuação mais elevada e aja de forma imediata e cirúrgica.
+        </div>
+      </div>
+      <div class="guide-zone-card woe">
+        <div class="guide-zone-label">WOE · Zona de Perigo</div>
+        <span class="zone-range">18 – 28</span>
+        <div style="color:var(--muted);font-size:13px;line-height:1.7">
+          Alta probabilidade de fracasso ou resultado medíocre. Projetos nesta faixa raramente atingem seus objetivos sem reestruturação profunda. Revise as premissas fundamentais antes de prosseguir com investimentos adicionais.
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 7. Como usar o DICE ── -->
+    <div class="guide-hero" style="margin-top:0;padding-bottom:16px">
+      <div class="guide-hero-tag">Aplicações Práticas</div>
+      <div class="guide-hero-title">Três formas de usar o DICE</div>
+    </div>
+
+    <div class="guide-uses-grid">
+      <div class="guide-use-card">
+        <div class="guide-use-num">01</div>
+        <div class="guide-use-title">Rastrear projetos individualmente</div>
+        <div class="guide-use-body">
+          Calcule o score antes do lançamento e compare com histórico de projetos similares. Recalcule em cada marco principal — o DICE é um indicador precoce de deterioração, não apenas um diagnóstico inicial.<br><br>
+          <strong style="color:var(--ink)">Frequência recomendada:</strong> a cada revisão formal de marco, ou quando houver mudança significativa em equipe, sponsor ou escopo.
+        </div>
+      </div>
+      <div class="guide-use-card">
+        <div class="guide-use-num">02</div>
+        <div class="guide-use-title">Gerenciar portfólios de mudança</div>
+        <div class="guide-use-body">
+          Avalie todos os projetos do portfólio simultaneamente. Priorize recursos e atenção da liderança onde o risco é maior.<br><br>
+          <strong style="color:var(--ink)">Insight contrariano do BCG:</strong> não ter todos os projetos na zona WIN é saudável — indicaria falta de ambição estratégica. Mantenha projetos menos prioritários em WORRY com monitoramento ativo.
+        </div>
+      </div>
+      <div class="guide-use-card">
+        <div class="guide-use-num">03</div>
+        <div class="guide-use-title">Forçar conversas estratégicas</div>
+        <div class="guide-use-body">
+          Quando executivos diferentes avaliam o mesmo projeto e chegam a scores distintos, a divergência é o ponto de partida mais valioso.<br><br>
+          <strong style="color:var(--ink)">Pergunta catalisadora:</strong> "Por que enxergamos o projeto de formas tão diferentes?" O DICE cria uma linguagem comum para debates que frequentemente ficam bloqueados por hierarquia ou ambiguidade.
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 8. Armadilhas comuns ── -->
+    <div class="guide-hero" style="margin-top:0;padding-bottom:16px">
+      <div class="guide-hero-tag">Erros Frequentes</div>
+      <div class="guide-hero-title">Armadilhas na aplicação do DICE</div>
+    </div>
+
+    <div class="guide-pitfall-list" style="margin-bottom:24px">
+      <div class="guide-pitfall">
+        <span class="guide-pitfall-icon" aria-hidden="true">⚠️</span>
+        <div>
+          <div class="guide-pitfall-title">Avaliar com viés de confirmação</div>
+          <div class="guide-pitfall-text">O maior inimigo do DICE é o gestor que quer um score WIN independente da realidade. A ferramenta só tem valor diagnóstico quando os fatores são avaliados com honestidade radical. O BCG recomenda que avaliações críticas sejam feitas por múltiplos respondentes — e que divergências sejam investigadas, não suprimidas.</div>
+        </div>
+      </div>
+      <div class="guide-pitfall">
+        <span class="guide-pitfall-icon" aria-hidden="true">⚠️</span>
+        <div>
+          <div class="guide-pitfall-title">Confundir duração total com intervalo de revisão</div>
+          <div class="guide-pitfall-text">D avalia o intervalo entre checkpoints — não o tamanho do projeto. Um projeto de 3 anos com revisões mensais pontua melhor em D do que um projeto de 6 meses sem revisões intermediárias. Este é o erro mais comum na primeira aplicação do framework.</div>
+        </div>
+      </div>
+      <div class="guide-pitfall">
+        <span class="guide-pitfall-icon" aria-hidden="true">⚠️</span>
+        <div>
+          <div class="guide-pitfall-title">Calcular uma vez e arquivar</div>
+          <div class="guide-pitfall-text">O score DICE muda ao longo do projeto — e frequentemente piora nas fases de implementação intensiva, quando C2 deteriora e E aumenta. Projetos que começam na zona WIN podem migrar para WORRY sem que ninguém perceba se não houver recálculo periódico.</div>
+        </div>
+      </div>
+      <div class="guide-pitfall">
+        <span class="guide-pitfall-icon" aria-hidden="true">⚠️</span>
+        <div>
+          <div class="guide-pitfall-title">Tratar o DICE como único critério de decisão</div>
+          <div class="guide-pitfall-text">O framework prediz a probabilidade de sucesso na execução — não avalia a validade estratégica, o retorno financeiro ou a urgência do projeto. Um score WOE não significa necessariamente "cancelar": significa "reestruturar antes de prosseguir". A decisão final requer contexto que vai além do modelo.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 9. Referência acadêmica ── -->
+    <div class="guide-ref-box">
+      <div class="guide-hero-tag" style="margin-bottom:12px">Referência Acadêmica</div>
+      <div class="guide-ref-cite">
+        Sirkin, H. L., Keenan, P., &amp; Jackson, A. (2005).
+        <em>"The Hard Side of Change Management."</em>
+        Harvard Business Review, 83(10), 108–118.
+      </div>
+      <div class="guide-ref-meta">
+        <div class="guide-ref-item">
+          <span class="guide-ref-label">Publicação</span>
+          <span class="guide-ref-value">Harvard Business Review · Outubro 2005</span>
+        </div>
+        <div class="guide-ref-item">
+          <span class="guide-ref-label">Reprint</span>
+          <span class="guide-ref-value">HBR R0510G</span>
+        </div>
+        <div class="guide-ref-item">
+          <span class="guide-ref-label">Amostra</span>
+          <span class="guide-ref-value">225 iniciativas de mudança · 1992–2005</span>
+        </div>
+        <div class="guide-ref-item">
+          <span class="guide-ref-label">Patente</span>
+          <span class="guide-ref-value">US Patent 8.818.756 · 2014</span>
+        </div>
+        <div class="guide-ref-item">
+          <span class="guide-ref-label">Validação</span>
+          <span class="guide-ref-value">+1.000 programas BCG · R² = 0,84</span>
+        </div>
+      </div>
+      <div class="guide-ref-links">
+        <a href="https://hbr.org/2005/10/the-hard-side-of-change-management"
+           target="_blank" rel="noopener" class="guide-ref-link"
+           aria-label="Acessar artigo na Harvard Business Review (abre em nova aba)">
+          <span aria-hidden="true">→</span> Artigo na Harvard Business Review <span aria-hidden="true">↗</span>
+        </a>
+        <a href="https://web.mit.edu/curhan/www/docs/Articles/15341_Readings/Organizational_Cognition_&_Learning/Sirkin_Hard_Side_of_Change_Management.pdf"
+           target="_blank" rel="noopener" class="guide-ref-link"
+           aria-label="Baixar PDF completo do artigo via MIT (abre em nova aba)">
+          → PDF completo (MIT) ↗
+        </a>
+        <a href="https://www.bcg.com/publications/2005/change_management_program_management_hard_side_change_management"
+           target="_blank" rel="noopener" class="guide-ref-link"
+           aria-label="Acessar publicação original do BCG (abre em nova aba)">
+          → Publicação original do BCG ↗
+        </a>
+      </div>
+    </div>
+
+  </div><!-- /view-guide -->
+
+</div><!-- /app -->
+
+<!-- Modal de Relatório -->
+<div class="modal-overlay" id="reportModal"
+     role="dialog" aria-modal="true" aria-labelledby="modalTitleId">
+  <div class="modal" id="reportModalContent" tabindex="-1">
+    <!-- Conteúdo injetado via js/modal.js -->
+  </div>
+</div>
+
+<!-- Banner de popup bloqueado -->
+<div class="popup-banner" id="popupBanner" role="alert" aria-live="assertive">
+  <span>⚠️ Popups bloqueados. Permita popups para este site e tente novamente.</span>
+  <button class="popup-banner-retry" id="popupRetry">Tentar novamente</button>
+  <button class="popup-banner-close" onclick="dismissPopupBanner()" aria-label="Fechar aviso">×</button>
+</div>
+
+<!-- Toast de notificação -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- ══ Scripts — ordem de dependência ══ -->
+<script src="js/state.js"></script>
+<script src="js/data.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/chart.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/export.js"></script>
+
+</body>
+</html>
