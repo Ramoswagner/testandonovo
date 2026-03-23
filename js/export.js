@@ -80,30 +80,9 @@ function savePNG() {
 
 // eslint-disable-next-line no-unused-vars
 function exportPDF() {
-  // FIX #11 — feedback visual imediato: desabilita botao e mostra "Gerando..."
   const triggerBtn = document.querySelector('.btn-academic-primary');
-  if (triggerBtn) {
-    triggerBtn.disabled = true;
-    triggerBtn.textContent = 'Gerando\u2026';
-    setTimeout(() => {
-      triggerBtn.disabled = false;
-      triggerBtn.innerHTML = [
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"',
-        ' stroke="currentColor" stroke-width="2" aria-hidden="true">',
-        '<polyline points="6 9 6 2 18 2 18 9"/>',
-        '<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16',
-        ' a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>',
-        '<rect x="6" y="14" width="12" height="8"/></svg>',
-        ' Exportar como PDF'
-      ].join('');
-    }, 3000);
-  }
 
-  // FIX #08 — window.open() chamado IMEDIATAMENTE (obrigatorio em mobile/Safari).
-  // Qualquer operacao antes do open() faz o popup ser bloqueado.
-  const win = window.open('', '_blank');
-
-  // Monta HTML sincronamente (seguro apos o open())
+  // ── Monta os dados do relatório ──────────────────────────────────
   const sc       = calcScore();
   const z        = zone(sc);
   const zl       = zoneLabel(sc);
@@ -111,6 +90,7 @@ function exportPDF() {
   const nowShort = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const ts       = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   const reportId = 'DICE-' + sc + '-' + nowShort.replace(/[^a-zA-Z0-9]/g, '');
+  const filename  = `DICE-${zl.toLowerCase()}-${sc}-${nowShort.replace(/[^a-zA-Z0-9]/g, '')}.pdf`;
 
   const projectName = escapeHtml(
     document.getElementById('projectName')?.value?.trim() || 'Projeto sem nome'
@@ -136,20 +116,117 @@ function exportPDF() {
     recTableHtml:    _buildRecTable(z, zc)
   });
 
-  // FIX #08 — _pendingPDFHtml setado APENAS no path de falha
-  if (!win) {
-    _pendingPDFHtml = html;
-    showPopupBanner();
-    return;
+  // ── Botão: estado de loading ──────────────────────────────────────
+  function _setBtnLoading(loading) {
+    if (!triggerBtn) return;
+    if (loading) {
+      triggerBtn.disabled = true;
+      triggerBtn.dataset.originalHtml = triggerBtn.innerHTML;
+      triggerBtn.innerHTML = [
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"',
+        ' stroke="currentColor" stroke-width="2.5" aria-hidden="true"',
+        ' style="animation:spin .8s linear infinite">',
+        '<circle cx="12" cy="12" r="10" stroke-dasharray="40" stroke-dashoffset="30"/>',
+        '</svg> Gerando PDF…'
+      ].join('');
+    } else {
+      triggerBtn.disabled = false;
+      triggerBtn.innerHTML = triggerBtn.dataset.originalHtml || 'Exportar como PDF';
+    }
   }
 
-  // Exportacao bem-sucedida: limpa qualquer pending anterior
-  _pendingPDFHtml = null;
-  dismissPopupBanner();
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-  showToast('Abrindo relatorio \u2014 aguarde o dialogo de impressao\u2026');
+  // ── Estratégia: html2pdf.js (download direto, sem popup) ──────────
+  // Carrega html2pdf sob demanda — só quando o usuário clica em exportar.
+  // Isso evita carregar ~200kb de biblioteca na inicialização da página.
+  function _downloadWithHtml2Pdf() {
+    _setBtnLoading(true);
+
+    // Cria um iframe oculto para renderizar o HTML do PDF isoladamente.
+    // Isso garante que estilos e fontes do app principal não interfiram.
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:0;visibility:hidden';
+    document.body.appendChild(iframe);
+
+    const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+    iDoc.open();
+    iDoc.write(html);
+    iDoc.close();
+
+    // Aguarda fontes carregarem no iframe antes de renderizar
+    const fontsReady = iDoc.fonts ? iDoc.fonts.ready : Promise.resolve();
+    fontsReady.then(() => {
+      // html2pdf renderiza o body do iframe e salva como PDF
+      const element = iDoc.body;
+      const opt = {
+        margin:      0,
+        filename:    filename,
+        image:       { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale:        2,          // 2× para nitidez em Retina
+          useCORS:      true,       // permite carregar fontes externas (Google)
+          letterRendering: true,
+          logging:      false
+        },
+        jsPDF: {
+          unit:        'mm',
+          format:      'a4',
+          orientation: 'portrait'
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      window.html2pdf()
+        .set(opt)
+        .from(element)
+        .save()
+        .then(() => {
+          document.body.removeChild(iframe);
+          _setBtnLoading(false);
+          showToast('PDF baixado com sucesso!');
+        })
+        .catch(err => {
+          console.error('html2pdf falhou:', err);
+          document.body.removeChild(iframe);
+          _setBtnLoading(false);
+          // Fallback: abre janela de impressão como antes
+          _fallbackPrint(html);
+        });
+    });
+  }
+
+  // ── Fallback: método original via window.print() ──────────────────
+  // Usado apenas se html2pdf falhar ou não carregar.
+  function _fallbackPrint(htmlContent) {
+    const win = window.open('', '_blank');
+    if (!win) {
+      _pendingPDFHtml = htmlContent;
+      showPopupBanner();
+      return;
+    }
+    _pendingPDFHtml = null;
+    dismissPopupBanner();
+    win.document.open();
+    win.document.write(htmlContent);
+    win.document.close();
+    showToast('Abrindo relatório — aguarde o diálogo de impressão…');
+  }
+
+  // ── Carrega html2pdf.js sob demanda ──────────────────────────────
+  // Se já estiver carregado (clique repetido), executa direto.
+  if (typeof window.html2pdf === 'function') {
+    _downloadWithHtml2Pdf();
+  } else {
+    _setBtnLoading(true);
+    const script  = document.createElement('script');
+    script.src    = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    script.onload = () => _downloadWithHtml2Pdf();
+    script.onerror = () => {
+      console.warn('html2pdf.js não carregou — usando fallback de impressão');
+      _setBtnLoading(false);
+      _fallbackPrint(html);
+    };
+    document.head.appendChild(script);
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -332,7 +409,7 @@ function _assemblePDFDocument(p) {
   <div class="doc-footer-r">WR</div>
 </div>
 
-<script>window.addEventListener('load',function(){setTimeout(function(){window.print();},1200);});<\/script>
+<!-- pdf gerado via html2pdf.js — window.print() não é mais necessário -->
 </body></html>`;
 }
 
