@@ -488,6 +488,9 @@ canvas#diceChart  { width: 100%; aspect-ratio: 900 / 380; border-radius: 12px; b
   .guide-ref-links        { flex-direction: column; gap: 10px; }
 }
 
+/* ── Spinner de loading para botões ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* ── Acessibilidade: sr-only (#22) ── */
 /* Texto visível apenas para leitores de tela */
 .sr-only {
