@@ -80,9 +80,6 @@ function savePNG() {
 
 // eslint-disable-next-line no-unused-vars
 function exportPDF() {
-  const triggerBtn = document.querySelector('.btn-academic-primary');
-
-  // ── Monta os dados do relatório ──────────────────────────────────
   const sc       = calcScore();
   const z        = zone(sc);
   const zl       = zoneLabel(sc);
@@ -90,12 +87,10 @@ function exportPDF() {
   const nowShort = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const ts       = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   const reportId = 'DICE-' + sc + '-' + nowShort.replace(/[^a-zA-Z0-9]/g, '');
-  const filename  = `DICE-${zl.toLowerCase()}-${sc}-${nowShort.replace(/[^a-zA-Z0-9]/g, '')}.pdf`;
 
   const projectName = escapeHtml(
     document.getElementById('projectName')?.value?.trim() || 'Projeto sem nome'
   );
-
   const J = {
     D:  escapeHtml(document.getElementById('justD')?.value?.trim()  || ''),
     I:  escapeHtml(document.getElementById('justI')?.value?.trim()  || ''),
@@ -107,146 +102,67 @@ function exportPDF() {
   const zc  = ZONE_COLORS[z];
   const zbg = ZONE_BG[z];
   const zbd = ZONE_BORDER[z];
-
   const factors = getFactorsForPDF();
-  const html    = _assemblePDFDocument({
+  const pdfHtml = _assemblePDFDocument({
     projectName, sc, z, zl, now, nowShort, ts, reportId, zc, zbg, zbd,
     coverBarsHtml:   _buildCoverBars(factors),
     factorTableHtml: _buildFactorTable(factors, J),
     recTableHtml:    _buildRecTable(z, zc)
   });
 
-  // ── Botão: estado de loading ──────────────────────────────────────
-  function _setBtnLoading(loading) {
-    if (!triggerBtn) return;
-    if (loading) {
-      triggerBtn.disabled = true;
-      triggerBtn.dataset.originalHtml = triggerBtn.innerHTML;
-      triggerBtn.innerHTML = [
-        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"',
-        ' stroke="currentColor" stroke-width="2.5" aria-hidden="true"',
-        ' style="animation:spin .8s linear infinite">',
-        '<circle cx="12" cy="12" r="10" stroke-dasharray="40" stroke-dashoffset="30"/>',
-        '</svg> Gerando PDF…'
-      ].join('');
-    } else {
-      triggerBtn.disabled = false;
-      triggerBtn.innerHTML = triggerBtn.dataset.originalHtml || 'Exportar como PDF';
-    }
-  }
+  // Print-in-place: injeta o PDF como layer oculto na pagina atual,
+  // usa @media print para esconder o app e mostrar so o PDF,
+  // e chama window.print() na mesma janela.
+  // - Nunca bloqueado (sem nova janela)
+  // - Fidelidade 100% (mesmo motor CSS)
+  // - Fontes ja carregadas
+  // - Zero dependencia externa
+  // - Mobile: iOS "Salvar em Arquivos", Chrome "Salvar PDF"
 
-  // ── Estratégia: html2pdf.js (download direto, sem popup) ──────────
-  // Carrega html2pdf sob demanda — só quando o usuário clica em exportar.
-  // Isso evita carregar ~200kb de biblioteca na inicialização da página.
-  function _downloadWithHtml2Pdf() {
-    _setBtnLoading(true);
+  const LAYER_ID = 'dice-print-layer';
+  const STYLE_ID = 'dice-print-style';
 
-    // Injeta CSS + body do PDF diretamente no documento principal.
-    // html2canvas nao acessa estilos de iframes — renderizar no doc
-    // principal com CSS injetado e cleanup posterior e a abordagem correta.
+  const bodyMatch = pdfHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  const bodyHtml  = bodyMatch ? bodyMatch[1] : pdfHtml;
+  const cssMatch  = pdfHtml.match(/<style>([\s\S]*?)<\/style>/i);
+  const pdfCss    = cssMatch ? cssMatch[1] : '';
 
-    const CONTAINER_ID = 'dice-pdf-render';
-    const STYLE_ID     = 'dice-pdf-style';
+  // Remove layer anterior se existir (clique duplo)
+  const oldLayer = document.getElementById(LAYER_ID);
+  const oldStyle = document.getElementById(STYLE_ID);
+  if (oldLayer) oldLayer.remove();
+  if (oldStyle) oldStyle.remove();
 
-    // Extrai o body content do HTML do PDF
-    const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-    const bodyHtml  = bodyMatch ? bodyMatch[1] : html;
+  // Injeta CSS: esconde o app, mostra so o layer, aplica CSS do PDF
+  const styleEl = document.createElement('style');
+  styleEl.id = STYLE_ID;
+  styleEl.textContent = '@media print {'
+    + 'body > *:not(#' + LAYER_ID + '){display:none!important;}'
+    + '#' + LAYER_ID + '{display:block!important;}'
+    + pdfCss
+    + '}';
+  document.head.appendChild(styleEl);
 
-    // Extrai e injeta o <style> completo sem modificar nada
-    const cssMatch = html.match(/<style>([\s\S]*?)<\/style>/i);
-    const styleEl  = document.createElement('style');
-    styleEl.id     = STYLE_ID;
-    styleEl.textContent = cssMatch ? cssMatch[1] : '';
-    document.head.appendChild(styleEl);
+  // Layer oculto em tela, visivel apenas na impressao
+  const layer = document.createElement('div');
+  layer.id = LAYER_ID;
+  layer.setAttribute('aria-hidden', 'true');
+  layer.style.display = 'none';
+  layer.innerHTML = bodyHtml;
+  document.body.appendChild(layer);
 
-    // Container com 794px (A4 a 96dpi), fora da tela
-    const container = document.createElement('div');
-    container.id    = CONTAINER_ID;
-    container.style.cssText = 'position:fixed;top:0;left:-9999px;width:794px;background:white;z-index:-1';
-    container.innerHTML = bodyHtml;
-    document.body.appendChild(container);
+  // Cleanup: remove apos fechar o dialogo de impressao
+  window.addEventListener('afterprint', function cleanup() {
+    const l = document.getElementById(LAYER_ID);
+    const s = document.getElementById(STYLE_ID);
+    if (l) l.remove();
+    if (s) s.remove();
+  }, { once: true });
 
-    function cleanup() {
-      const c = document.getElementById(CONTAINER_ID);
-      const s = document.getElementById(STYLE_ID);
-      if (c) c.parentNode.removeChild(c);
-      if (s) s.parentNode.removeChild(s);
-    }
-
-    // Aguarda Cormorant Garamond + Inter carregarem antes de capturar
-    document.fonts.ready.then(() => {
-      const opt = {
-        margin:   0,
-        filename: filename,
-        image:    { type: 'jpeg', quality: 0.97 },
-        html2canvas: {
-          scale:           2,
-          useCORS:         true,
-          letterRendering: true,
-          logging:         false,
-          windowWidth:     794,
-          backgroundColor: '#ffffff'
-        },
-        jsPDF: {
-          unit:        'mm',
-          format:      'a4',
-          orientation: 'portrait',
-          compress:    true
-        },
-        pagebreak: { mode: ['css', 'legacy'] }
-      };
-
-      window.html2pdf()
-        .set(opt)
-        .from(container)
-        .save()
-        .then(() => {
-          cleanup();
-          _setBtnLoading(false);
-          showToast('PDF baixado com sucesso!');
-        })
-        .catch(err => {
-          console.error('html2pdf falhou:', err);
-          cleanup();
-          _setBtnLoading(false);
-          _fallbackPrint(html);
-        });
-    });
-  }
-  // ── Fallback: método original via window.print() ──────────────────
-  // Usado apenas se html2pdf falhar ou não carregar.
-  function _fallbackPrint(htmlContent) {
-    const win = window.open('', '_blank');
-    if (!win) {
-      _pendingPDFHtml = htmlContent;
-      showPopupBanner();
-      return;
-    }
-    _pendingPDFHtml = null;
-    dismissPopupBanner();
-    win.document.open();
-    win.document.write(htmlContent);
-    win.document.close();
-    showToast('Abrindo relatório — aguarde o diálogo de impressão…');
-  }
-
-  // ── Carrega html2pdf.js sob demanda ──────────────────────────────
-  // Se já estiver carregado (clique repetido), executa direto.
-  if (typeof window.html2pdf === 'function') {
-    _downloadWithHtml2Pdf();
-  } else {
-    _setBtnLoading(true);
-    const script  = document.createElement('script');
-    script.src    = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-    script.onload = () => _downloadWithHtml2Pdf();
-    script.onerror = () => {
-      console.warn('html2pdf.js não carregou — usando fallback de impressão');
-      _setBtnLoading(false);
-      _fallbackPrint(html);
-    };
-    document.head.appendChild(script);
-  }
+  showToast('Salvando PDF\u2026 selecione o destino no di\u00e1logo.');
+  window.print();
 }
+
 
 // ══════════════════════════════════════════════
 // Builders de HTML (privados)
