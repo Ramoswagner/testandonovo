@@ -308,10 +308,6 @@ function _assemblePDFDocument(p) {
   </div>
   <div class="sec">Análise por Fator — com justificativa do gestor</div>
   ${factorTableHtml}
-  <div class="pfooter">
-    <div class="pfooter-l">DICE Framework · ${projectName} · ${nowShort} · ID: ${reportId}</div>
-    <div class="pfooter-r">WR</div>
-  </div>
 </div>
 
 <div class="page" style="page-break-before:always">
@@ -328,10 +324,6 @@ function _assemblePDFDocument(p) {
       O estudo analisou 225 iniciativas de mudança em múltiplos setores e países, identificando os quatro fatores DICE como preditores estatisticamente significativos do sucesso de programas de transformação organizacional. A fórmula foi validada por regressão logística multivariada e confirmada em mais de 1.000 programas conduzidos pelo BCG desde 1994.<br><br>
       <a href="https://hbr.org/2005/10/the-hard-side-of-change-management" style="color:#C4A35A;font-size:7.5px;text-decoration:none">hbr.org/2005/10/the-hard-side-of-change-management</a>
     </div>
-  </div>
-  <div class="pfooter">
-    <div class="pfooter-l">DICE Framework · ${projectName} · ${nowShort} · Wagner Ramos — PMO &amp; BI</div>
-    <div class="pfooter-r">WR</div>
   </div>
 </div>
 
