@@ -141,54 +141,98 @@ function exportPDF() {
   function _downloadWithHtml2Pdf() {
     _setBtnLoading(true);
 
-    // Cria um iframe oculto para renderizar o HTML do PDF isoladamente.
-    // Isso garante que estilos e fontes do app principal não interfiram.
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:0;visibility:hidden';
-    document.body.appendChild(iframe);
+    // ── Por que não usamos iframe ──────────────────────────────────
+    // html2canvas (motor do html2pdf) não tem acesso aos estilos do
+    // <head> de um iframe — ele captura o elemento mas ignora o
+    // <style> injetado em outro documento. Resultado: sem formatação.
+    //
+    // Solução: renderizar no documento PRINCIPAL com um container
+    // oculto. O CSS do PDF é injetado temporariamente como uma
+    // <style> no <head> principal com um escopo único (#dice-pdf-root),
+    // garantindo isolamento sem perder acesso ao contexto de renderização.
+    // ────────────────────────────────────────────────────────────────
 
-    const iDoc = iframe.contentDocument || iframe.contentWindow.document;
-    iDoc.open();
-    iDoc.write(html);
-    iDoc.close();
+    const scopeId  = 'dice-pdf-root';
+    const styleId  = 'dice-pdf-style';
 
-    // Aguarda fontes carregarem no iframe antes de renderizar
-    const fontsReady = iDoc.fonts ? iDoc.fonts.ready : Promise.resolve();
-    fontsReady.then(() => {
-      // html2pdf renderiza o body do iframe e salva como PDF
-      const element = iDoc.body;
+    // 1. Extrai apenas o body content do HTML do PDF
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    const bodyHtml  = bodyMatch ? bodyMatch[1] : html;
+
+    // 2. Extrai o CSS do PDF e adiciona escopo ao seletor raiz
+    const cssMatch  = html.match(/<style>([\s\S]*?)<\/style>/i);
+    const rawCss    = cssMatch ? cssMatch[1] : '';
+    // Prefixa cada regra de bloco com #dice-pdf-root para isolamento
+    const scopedCss = rawCss
+      .replace(/@page[^{]*\{[^}]*\}/g, '')          // remove @page (não se aplica no doc principal)
+      .replace(/@media print[\s\S]*?
+\}/g, '')       // remove @media print (não imprime o container)
+      .replace(/^((?!@)[^{]+)\{/gm, `#${scopeId} $1 {`); // prefixa cada regra
+
+    // 3. Injeta o CSS scoped no <head> do documento principal
+    let styleEl = document.getElementById(styleId);
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = scopedCss;
+
+    // 4. Cria container oculto com largura A4 no documento principal
+    //    Oculto via clip/translate — display:none impede a renderização
+    const container = document.createElement('div');
+    container.id    = scopeId;
+    container.style.cssText = [
+      'position:fixed',
+      'top:0',
+      'left:-9999px',
+      'width:210mm',
+      'background:white',
+      'z-index:-1',
+      'pointer-events:none'
+    ].join(';');
+    container.innerHTML = bodyHtml;
+    document.body.appendChild(container);
+
+    // 5. Aguarda fontes do documento carregarem antes de capturar
+    document.fonts.ready.then(() => {
       const opt = {
         margin:      0,
         filename:    filename,
         image:       { type: 'jpeg', quality: 0.98 },
         html2canvas: {
-          scale:        2,          // 2× para nitidez em Retina
-          useCORS:      true,       // permite carregar fontes externas (Google)
+          scale:           2,      // 2× para telas Retina
+          useCORS:         true,   // fontes e imagens cross-origin
           letterRendering: true,
-          logging:      false
+          logging:         false,
+          windowWidth:     794     // largura A4 em px a 96dpi
         },
         jsPDF: {
           unit:        'mm',
           format:      'a4',
           orientation: 'portrait'
         },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        pagebreak: { mode: ['css', 'legacy'] }
       };
+
+      function cleanup() {
+        if (container.parentNode) document.body.removeChild(container);
+        if (styleEl.parentNode)   document.head.removeChild(styleEl);
+      }
 
       window.html2pdf()
         .set(opt)
-        .from(element)
+        .from(container)
         .save()
         .then(() => {
-          document.body.removeChild(iframe);
+          cleanup();
           _setBtnLoading(false);
           showToast('PDF baixado com sucesso!');
         })
         .catch(err => {
           console.error('html2pdf falhou:', err);
-          document.body.removeChild(iframe);
+          cleanup();
           _setBtnLoading(false);
-          // Fallback: abre janela de impressão como antes
           _fallbackPrint(html);
         });
     });
