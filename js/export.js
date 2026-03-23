@@ -102,66 +102,33 @@ function exportPDF() {
   const zc  = ZONE_COLORS[z];
   const zbg = ZONE_BG[z];
   const zbd = ZONE_BORDER[z];
+
   const factors = getFactorsForPDF();
-  const pdfHtml = _assemblePDFDocument({
+  const html    = _assemblePDFDocument({
     projectName, sc, z, zl, now, nowShort, ts, reportId, zc, zbg, zbd,
     coverBarsHtml:   _buildCoverBars(factors),
     factorTableHtml: _buildFactorTable(factors, J),
     recTableHtml:    _buildRecTable(z, zc)
   });
 
-  // Print-in-place: injeta o PDF como layer oculto na pagina atual,
-  // usa @media print para esconder o app e mostrar so o PDF,
-  // e chama window.print() na mesma janela.
-  // - Nunca bloqueado (sem nova janela)
-  // - Fidelidade 100% (mesmo motor CSS)
-  // - Fontes ja carregadas
-  // - Zero dependencia externa
-  // - Mobile: iOS "Salvar em Arquivos", Chrome "Salvar PDF"
-
-  const LAYER_ID = 'dice-print-layer';
-  const STYLE_ID = 'dice-print-style';
-
-  const bodyMatch = pdfHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-  const bodyHtml  = bodyMatch ? bodyMatch[1] : pdfHtml;
-  const cssMatch  = pdfHtml.match(/<style>([\s\S]*?)<\/style>/i);
-  const pdfCss    = cssMatch ? cssMatch[1] : '';
-
-  // Remove layer anterior se existir (clique duplo)
-  const oldLayer = document.getElementById(LAYER_ID);
-  const oldStyle = document.getElementById(STYLE_ID);
-  if (oldLayer) oldLayer.remove();
-  if (oldStyle) oldStyle.remove();
-
-  // Injeta CSS: esconde o app, mostra so o layer, aplica CSS do PDF
-  const styleEl = document.createElement('style');
-  styleEl.id = STYLE_ID;
-  styleEl.textContent = '@media print {'
-    + 'body > *:not(#' + LAYER_ID + '){display:none!important;}'
-    + '#' + LAYER_ID + '{display:block!important;}'
-    + pdfCss
-    + '}';
-  document.head.appendChild(styleEl);
-
-  // Layer oculto em tela, visivel apenas na impressao
-  const layer = document.createElement('div');
-  layer.id = LAYER_ID;
-  layer.setAttribute('aria-hidden', 'true');
-  layer.style.display = 'none';
-  layer.innerHTML = bodyHtml;
-  document.body.appendChild(layer);
-
-  // Cleanup: remove apos fechar o dialogo de impressao
-  window.addEventListener('afterprint', function cleanup() {
-    const l = document.getElementById(LAYER_ID);
-    const s = document.getElementById(STYLE_ID);
-    if (l) l.remove();
-    if (s) s.remove();
-  }, { once: true });
-
-  showToast('Salvando PDF\u2026 selecione o destino no di\u00e1logo.');
-  window.print();
+  // Mesma tecnica do Project Wagner BI:
+  // Abre nova janela, escreve o HTML completo e deixa o usuario
+  // salvar clicando no botao dentro do relatorio.
+  // Simples, sem dependencias, fidelidade 100%.
+  const win = window.open('', '_blank', 'width=1200,height=900');
+  if (!win) {
+    _pendingPDFHtml = html;
+    showPopupBanner();
+    return;
+  }
+  _pendingPDFHtml = null;
+  dismissPopupBanner();
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  showToast('Relat\u00f3rio aberto \u2014 clique em "Salvar como PDF" na nova janela.');
 }
+
 
 
 // ══════════════════════════════════════════════
@@ -344,7 +311,10 @@ function _assemblePDFDocument(p) {
   <div class="doc-footer-r">WR</div>
 </div>
 
-<!-- pdf gerado via html2pdf.js — window.print() não é mais necessário -->
+<!-- Botão salvar PDF — mesmo padrão do Project Wagner BI -->
+<button id="dice-print-btn" class="no-print" onclick="window.print()">
+  <span style="font-size:16px">&#x1F4BE;</span> Salvar como PDF
+</button>
 </body></html>`;
 }
 
@@ -439,5 +409,7 @@ html,body{font-family:'Inter',sans-serif;font-size:10px;line-height:1.5;backgrou
 .doc-footer{display:flex;align-items:center;justify-content:space-between;padding:2mm 13mm;border-top:1px solid #E5E7EB;margin-top:4mm}
 .doc-footer-l{font-size:6.5px;color:#9CA3AF;letter-spacing:.04em}
 .doc-footer-r{font-family:'Cormorant Garamond',serif;font-size:9pt;font-weight:700;color:#C4A35A;letter-spacing:.14em}
-@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.cover{page-break-after:always}}`;
+@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.cover{page-break-after:always}.no-print{display:none!important}}
+#dice-print-btn{position:fixed;bottom:28px;right:28px;background:#0B1E33;color:#C4A35A;border:1px solid rgba(196,163,90,0.4);padding:13px 26px;border-radius:50px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 8px 28px rgba(11,30,51,0.4);display:flex;align-items:center;gap:9px;z-index:9999;transition:all .2s}
+#dice-print-btn:hover{background:#153450;transform:translateY(-2px)}`;
 }
